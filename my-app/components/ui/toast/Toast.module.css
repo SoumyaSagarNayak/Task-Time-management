@@ -1,0 +1,180 @@
+/**
+ * Toast Notification System
+ * Global UI feedback system used across the application.
+ *
+ * Supports:
+ * - success
+ * - error
+ * - warning
+ * - info
+ *
+ * Features:
+ * - stacking notifications
+ * - auto dismiss
+ * - manual close
+ * - animations
+ * - validation
+ */
+
+/* Container styles */
+.toastContainer {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+.top-right {
+  top: 0;
+  right: 0;
+}
+
+.top-left {
+  top: 0;
+  left: 0;
+}
+
+.bottom-right {
+  bottom: 0;
+  right: 0;
+  flex-direction: column-reverse;
+}
+
+.bottom-left {
+  bottom: 0;
+  left: 0;
+  flex-direction: column-reverse;
+}
+
+/* Toast Item */
+.toastItem {
+  pointer-events: auto;
+  min-width: 300px;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+  background-color: white;
+}
+
+/* Dark mode support (if applicable in tailwind app, we can override or use variables) */
+@media (prefers-color-scheme: dark) {
+  .toastItem {
+    background-color: #1f2937;
+    color: #f9fafb;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.iconWrapper {
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.message {
+  flex-grow: 1;
+  word-wrap: break-word;
+  line-height: 1.25rem;
+  color: inherit; /* will be inherited from the component wrapper */
+}
+
+/* Close button */
+.closeButton {
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  opacity: 0.6;
+  border-radius: 0.25rem;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.closeButton:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .closeButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Animations */
+.slideInRight {
+  animation: slideInRightAnimation 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.slideOutRight {
+  animation: fadeOutRightAnimation 0.3s ease-in forwards;
+}
+
+.slideInLeft {
+  animation: slideInLeftAnimation 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.slideOutLeft {
+  animation: fadeOutLeftAnimation 0.3s ease-in forwards;
+}
+
+@keyframes slideInRightAnimation {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutRightAnimation {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInLeftAnimation {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutLeftAnimation {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}

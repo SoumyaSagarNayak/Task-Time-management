@@ -1,0 +1,26 @@
+/* src/components/drag/dragStyles.module.css */
+
+.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    z-index: 10;
+}
+
+.dragOver {
+    border: 2px dashed var(--primary);
+    background-color: var(--accent);
+    opacity: 0.8;
+}
+
+.sortableItem {
+    transition: transform 0.2s ease;
+    cursor: grab;
+    position: relative;
+    touch-action: none; /* Required for mobile drag support */
+}
+
+.sortableItem:active {
+    cursor: grabbing;
+}

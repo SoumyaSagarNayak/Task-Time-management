@@ -1,0 +1,59 @@
+# Flow Pilot - Project Explanation
+
+## 1. What is this project?
+Flow Pilot is a modern, full-stack web application designed for **time entry and task tracking**. It acts as a comprehensive workspace management tool where users can manage organizations, employees, tasks, log time against tasks, and generate reports.
+
+In addition to the main application, there is also a standalone prototype file (`kanban.html`) which serves as a lightweight, purely frontend Kanban Command Center with drag-and-drop functionality for visual task management.
+
+## 2. What technologies are used? (Tech Stack)
+The project adopts a decoupled architecture, separating the frontend and backend into two distinct applications (`my-app` and `backend`).
+
+**Frontend (`/my-app`):**
+- **Next.js 16 (React 19)**: The core framework for building the user interface, utilizing the modern App Router architecture (`app/` directory).
+- **TanStack Query**: Used for data fetching, caching, and state management of server data.
+- **Radix UI**: Provides accessible, unstyled UI primitives for building the component system.
+- **Tailwind CSS** (implied via styling files and standard Next.js setups): Used for styling the application.
+
+**Backend (`/backend`):**
+- **NestJS**: A progressive Node.js framework for building efficient, reliable, and scalable server-side applications using TypeScript. It organizes code into modules (e.g., tasks, time-entries, users, reports).
+- **Prisma ORM**: A modern object-relational mapper that makes interacting with the database easy and type-safe.
+- **PostgreSQL**: The relational database used to store all application data (users, tasks, organizations, time entries). It can be run locally, via Docker, or hosted on Neon.tech.
+
+**Authentication:**
+- **Clerk**: A third-party authentication provider that handles secure user sign-ups, logins, and session management.
+
+**Tooling:**
+- **pnpm**: The chosen package manager for fast and efficient dependency installation.
+
+## 3. What is happening in the codebase and why?
+The architecture is split to ensure scalability and maintainability.
+
+### The Backend (`backend/`)
+- **Structure**: Uses NestJS's modular structure. If you look in `backend/src`, you'll see modules for `tasks`, `time-entries`, `users`, `organizations`, `reports`, etc. Each module handles its own specific business logic.
+- **Why**: NestJS forces a structured, Angular-like architecture which is excellent for large enterprise applications. It keeps concerns separated (Controllers handle routing, Services handle logic).
+- **Database Interaction**: The `prisma/` directory contains the database schema. Prisma translates this schema into TypeScript types and database queries, making it extremely difficult to write bad database queries and providing auto-completion in the code.
+
+### The Frontend (`my-app/`)
+- **Structure**: Uses the Next.js App Router (`my-app/app/`). You'll find routes like `(dashboard)`, `sign-in`, `sign-up`, and `notifications`.
+- **Why**: Next.js provides Server-Side Rendering (SSR) and Server Components out of the box, which makes the initial page load incredibly fast and is great for SEO. The `(dashboard)` folder uses route groups to apply a consistent layout (like a sidebar/navbar) to all dashboard pages without affecting the URL path.
+- **Data Fetching**: It uses TanStack Query to call the NestJS backend APIs. This handles loading states, error states, and caching automatically, providing a smooth user experience.
+
+### The Authentication Flow
+- When a user tries to access the app, **Clerk** verifies if they are logged in.
+- Clerk handles the UI for `sign-in` and `sign-up` within the Next.js app.
+- Once authenticated, requests to the backend include a secure token, which the NestJS backend verifies using the `CLERK_SECRET_KEY` to ensure the user has permission to access or modify data.
+
+### The Standalone Kanban (`kanban.html`)
+- **What**: A single HTML file containing vanilla JavaScript and CSS.
+- **Why**: This was likely built as a quick prototype or a specific requirement for a lightweight, dependency-free drag-and-drop Kanban board. It uses `localStorage` to save state locally in the browser, meaning it doesn't communicate with the NestJS backend.
+
+## 4. How to explain this to someone else
+You can summarize the project like this:
+
+> "Flow Pilot is a cloud-based productivity tool that helps teams track their tasks and the time spent on them.
+>
+> We built the user interface using **Next.js and React**, which gives users a fast, interactive experience. For our server, we used **NestJS**, a robust framework that handles all our complex business rules—like calculating time reports or managing employee data. 
+> 
+> All of our data is securely saved in a **PostgreSQL** database, and we use **Prisma** to smoothly connect our server to that database. To keep everything secure without reinventing the wheel, we integrated **Clerk** to handle user logins and accounts. 
+> 
+> Finally, we have a standalone, purely browser-based Kanban board prototype built with simple HTML and JavaScript for quick, local task organization."

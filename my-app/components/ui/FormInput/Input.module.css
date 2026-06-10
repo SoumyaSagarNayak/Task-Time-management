@@ -1,0 +1,137 @@
+/**
+ * Input.module.css
+ *
+ * Styles for the FormInput wrapper component.
+ * Re-uses CSS custom properties defined in globals.css
+ * (--input, --ring, --destructive, --muted-foreground, etc.)
+ * so that the component remains theme-consistent.
+ *
+ * The inner <input> / <textarea> styling is inherited from
+ * the existing shadcn Input / Textarea primitives.
+ */
+
+/* ── Outer wrapper ─────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem; /* 6px — tighter than gap-2 to match shadcn form spacing */
+}
+
+/* ── Label ──────────────────────────────────────────────── */
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem; /* 14px */
+  line-height: 1;
+  font-weight: 500;
+  user-select: none;
+  color: inherit;
+}
+
+/* Asterisk rendered after label text for required fields */
+.requiredIndicator {
+  color: var(--destructive);
+  font-weight: 600;
+}
+
+/* ── Input container (enables icon + toggle positioning) ── */
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* When an icon is present, add left padding to the inner input */
+.inputWrapper.hasIcon :global(input),
+.inputWrapper.hasIcon :global(textarea) {
+  padding-left: 2.5rem; /* 40px — room for the icon */
+}
+
+/* ── Icon slot ─────────────────────────────────────────── */
+.iconWrapper {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
+
+/* ── Password visibility toggle ────────────────────────── */
+.passwordToggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  border-radius: 0.25rem;
+  transition: color 0.15s ease;
+}
+
+.passwordToggle:hover {
+  color: var(--foreground);
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* When toggle is visible, add right padding to prevent text overlap */
+.inputWrapper.hasToggle :global(input) {
+  padding-right: 2.5rem;
+}
+
+/* ── Helper text ───────────────────────────────────────── */
+.helperText {
+  font-size: 0.75rem; /* 12px */
+  color: var(--muted-foreground);
+  line-height: 1.4;
+}
+
+/* ── Error message ─────────────────────────────────────── */
+.errorText {
+  font-size: 0.75rem;
+  color: var(--destructive);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* ── Character counter ─────────────────────────────────── */
+.charCounter {
+  font-size: 0.625rem; /* 10px */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  align-self: flex-end;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+/* Warn when close to the limit (>90%) */
+.charCounterWarning {
+  background: oklch(0.577 0.245 27.325 / 10%);
+  color: var(--destructive);
+}
+
+/* ── Footer row (helper/error + counter side by side) ──── */
+.footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.125rem; /* prevent layout shift when messages appear */
+}
