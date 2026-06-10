@@ -8,17 +8,6 @@ on:
       - 'backend/**'
       - 'my-app/**'
       - '.github/workflows/deploy-test.yml'
-
-env:
-  AWS_REGION: us-west-2
-  ECR_REPOSITORY: time-entry-test-backend-app
-  ECS_CLUSTER: time-entry-test-backend-cluster
-  ECS_SERVICE: time-entry-test-backend-task-service
-  MIGRATION_TASK_DEF: time-entry-test-backend-migrate-task
-  MIGRATION_SG_NAME: time-entry-test-backend-sg
-  SUBNET_TAG_KEY: Name
-  SUBNET_TAG_VALUE: time-entry-test-subnet
-
 permissions:
   contents: read
   actions: read
@@ -129,7 +118,7 @@ jobs:
           echo "Skip test deploy flag: ${{ steps.skip_deploy.outputs.skip }}"
 
   deploy-backend:
-    name: Build and Deploy Backend (Test)
+    name: Deploy Backend to Vercel (Test)
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.backend == 'true' && needs.changes.outputs.skip_deploy != 'true'
@@ -137,17 +126,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v2
@@ -158,61 +136,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: backend/pnpm-lock.yaml
 
-      - name: Install dependencies
-        working-directory: ./backend
-        run: pnpm install --frozen-lockfile
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
 
-      - name: Generate Prisma Client
+      - name: Deploy Backend to Vercel (Test Environment)
         working-directory: ./backend
         env:
-          DATABASE_URL: "postgresql://dummy:dummy@dummy:5432/dummy"
-        run: pnpm exec prisma generate
-
-      - name: Build application
-        working-directory: ./backend
-        run: pnpm build
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        working-directory: ./backend
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_BACKEND_TEST }}
         run: |
-          # Build Docker image (no tag = implicitly uses :latest)
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY .
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "ERROR: VERCEL_TOKEN secret is missing. Please add it to your GitHub repository secrets."
+            exit 1
+          fi
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "ERROR: VERCEL_ORG_ID secret is missing. Please add it to your GitHub repository secrets."
+            exit 1
+          fi
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "ERROR: VERCEL_PROJECT_ID_BACKEND_TEST secret is missing. Please add it to your GitHub repository secrets."
+            exit 1
+          fi
 
-          # Also tag with SHA for traceability
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY $ECR_REGISTRY/$ECR_REPOSITORY:test-$IMAGE_TAG
+          # Link project if not already linked (non-interactive)
+          if [ ! -f .vercel/project.json ]; then
+            echo "Linking Vercel test backend project..."
+            vercel link --yes --token=$VERCEL_TOKEN --scope=$VERCEL_ORG_ID --project=$VERCEL_PROJECT_ID || true
+          fi
 
-          # Push both: untagged (latest) and SHA-tagged
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:test-$IMAGE_TAG
-
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY" >> $GITHUB_OUTPUT
-
-      - name: Force ECS to pull latest image
-        run: |
-          echo "Forcing ECS service to pull latest image..."
-          echo "Service will pull: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}"
-
-          # Force new deployment - ECS will pull the image (default :latest)
-          aws ecs update-service \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVICE }} \
-            --force-new-deployment \
-            --region ${{ env.AWS_REGION }}
+          # Deploy to production on test environment
+          vercel deploy --prod --yes --token=$VERCEL_TOKEN
 
       - name: Deployment summary
         run: |
-          echo "✅ Backend deployment triggered successfully (Test)!"
-          echo "Image: ${{ steps.build-image.outputs.image }}"
-          echo "ECS Service: ${{ env.ECS_SERVICE }}"
-          echo "Cluster: ${{ env.ECS_CLUSTER }}"
-          echo "Deployment is in progress. ECS will pull the updated image."
+          echo "✅ Test environment backend deployment to Vercel triggered successfully!"
+          echo "Project ID: ${{ secrets.VERCEL_PROJECT_ID_BACKEND_TEST }}"
 
   deploy-frontend:
     name: Deploy Frontend to Vercel (Test)
