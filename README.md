@@ -1,342 +1,111 @@
-# Flow Pilot
+# ✈️ Flow Pilot
 
-A full-stack time entry and task tracking application built with NestJS, Next.js, and PostgreSQL.
+**Flow Pilot** is a modern, premium, and fully client-side **Time Entry & Task Tracking Dashboard** application. Originally a full-stack app, it has been re-architected into a **pure frontend-only** project that runs completely in the browser, persists data via `localStorage`, and integrates with **Clerk** for secure user authentication. 
 
-## Tech Stack
+It is designed to be lightweight, zero-maintenance, and deployable on **Vercel** in a single click with zero database configuration.
 
-- **Backend**: NestJS (TypeScript), Prisma ORM, PostgreSQL
-- **Frontend**: Next.js 16, React 19, TanStack Query, Radix UI
-- **Authentication**: Clerk
-- **Package Manager**: pnpm
+---
 
-## Workspace Scoping & User Roles
+## ✨ Key Features
 
-This application operates under a **global, user-scoped** model. The `Organization` and `OrganizationMember` levels have been completely removed.
+*   **📋 Kanban Board**: Manage your workflow with smooth drag-and-drop task card placement. Transition tasks between `Open`, `To Do`, `In Progress`, `In Review`, `Done`, and `Closed` statuses.
+*   **⏱️ Time Tracker**: Log your hours manually or run a live timer on individual tasks to measure exactly how long they take.
+*   **📊 Reports Dashboard**: Gain insights with visual metrics of total logged hours, user productivity breakdowns, task-specific logging, and billable vs. non-billable breakdowns.
+*   **💬 Comments & Collaboration**: Discuss work directly inside task detail views.
+*   **🔗 Task Dependencies**: Establish parent-child task linkages (`blocked by` and `blocks` relations) to manage blockers.
+*   **🔔 Notifications Panel**: Get notified when you are assigned a task, when comments are added, or when task status is updated.
+*   **🔍 Global Search**: Find tasks, comments, and time entries instantly using query matching, type selectors, and date-range filters.
+*   **📑 Data Exporting**: Export your time logs or activity audits directly into CSV or PDF formats from the dashboard.
+*   **🌙 Sleek UI/UX**: Crafted with beautiful Tailwind CSS, fluid animations, Outfit/Inter typography, and fully responsive layouts.
 
-- **MEMBER (Default)**: Normal member accounts can only create, view, and manage tasks and time entries assigned to or logged by themselves.
-- **ADMIN**: Admin accounts have global access to view, update, and export all tasks, time entries, and reports across the entire workspace.
-- **Seeded Data Access**: The seeding process creates global, unassigned mock tasks and time entries. To view this pre-seeded dashboard data under your account, promote your local database user to `ADMIN`.
+---
 
-### Promoting your user to ADMIN
-Run this command inside the `backend` directory (replace `your_clerk_id` with your Clerk User ID, visible in the database `users` table or Clerk dashboard):
-```bash
-npx ts-node -e "import { PrismaClient } from '@prisma/client'; new PrismaClient().user.update({ where: { clerkId: 'your_clerk_id' }, data: { role: 'ADMIN' } }).then(u => console.log('Promoted user to:', u.role))"
-```
+## 🛠️ Tech Stack
 
-## Prerequisites
+*   **Framework**: Next.js 16 (App Router)
+*   **Runtime**: React 19 & TypeScript 5
+*   **Styling**: Tailwind CSS & Radix UI primitives
+*   **State & Queries**: TanStack React Query v5 & Zustand
+*   **Authentication**: Clerk
+*   **Storage & Simulation**: `localStorage` backed Mock DB with Axios interceptors
+*   **Package Manager**: pnpm
 
-Before you begin, ensure you have the following installed:
+---
 
-- **Node.js** (v18 or higher)
-- **pnpm** (v8 or higher) - Install with `npm install -g pnpm`
-- **PostgreSQL** (v14 or higher) - Running locally, via Docker, or using a cloud service like [Neon.com](https://neon.tech)
-- **Clerk Account** - Sign up at [clerk.com](https://clerk.com) for authentication
+## 💾 Client-Side Architecture
 
-## Local Development Setup
+To remove backend dependencies while preserving all real-time capabilities, Flow Pilot uses a custom client-side database simulation:
+
+1.  **LocalStorage Database (`lib/mock-db.ts`)**: Acts as our database manager. If no data exists, it automatically seeds the browser with rich initial mock data (multiple users/employees, dummy tasks, linked time logs, comments, and activities) so your graphs and boards look alive on first load.
+2.  **API Client Interceptors (`lib/api.ts`)**: We replaced the Axios network client with a mock proxy. When components perform standard HTTP requests (e.g. `api.get('/tasks')` or `api.post('/time-entries')`), the client intercepts them locally, executes query/mutation logic on your local storage collections, and returns standard mock responses. 
+3.  **Clerk Syncing (`app/(dashboard)/layout.tsx`)**: When a user logs in via Clerk, their name, email, and avatar are synced directly into the local storage mock database as the active user.
+
+---
+
+## 🚀 Local Development Setup
 
 ### 1. Clone the Repository
-
 ```bash
-git clone <repository-url>
+git clone https://github.com/SoumyaSagarNayak/Task-Time-management.git
 cd flow-pilot
 ```
 
-### 2. Database Setup
-
-#### Option A: Local PostgreSQL
-
-1. Install and start PostgreSQL on your machine
-2. Create a new database:
-
-```bash
-createdb flow_pilot_dev
-```
-
-Or using PostgreSQL CLI:
-
-```bash
-psql -U postgres
-CREATE DATABASE flow_pilot_dev;
-\q
-```
-
-#### Option B: Docker PostgreSQL
-
-```bash
-docker run --name flow-pilot-db \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=flow_pilot_dev \
-  -p 5432:5432 \
-  -d postgres:14
-```
-
-#### Option C: Neon.com (Serverless PostgreSQL)
-
-1. Sign up for a free account at [neon.tech](https://neon.tech)
-2. Create a new project:
-   - Click "Create Project"
-   - Choose a project name (e.g., "flow-pilot-dev")
-   - Select a region closest to you
-   - Click "Create Project"
-3. Copy the connection string:
-   - In your Neon dashboard, go to your project
-   - Click on "Connection Details" or "Connection String"
-   - Copy the connection string (it will look like: `postgresql://user:password@host.neon.tech/dbname?sslmode=require`)
-4. Use this connection string as your `DATABASE_URL` in the backend `.env` file
-
-**Note**: Neon.com provides a free tier with generous limits, perfect for development. The connection string includes SSL by default, which is required for Neon databases.
-
-### 3. Clerk Authentication Setup
-
-1. Sign up for a free account at [clerk.com](https://clerk.com)
-2. Create a new application
-3. Note down the following from your Clerk dashboard:
-   - **Publishable Key** (starts with `pk_test_` or `pk_live_`)
-   - **Secret Key** (starts with `sk_test_` or `sk_live_`)
-4. Configure allowed origins in Clerk dashboard:
-   - Add `http://localhost:3000` to allowed origins
-
-### 4. Backend Setup
-
-1. Navigate to the backend directory:
-
-```bash
-cd backend
-```
-
-2. Install dependencies:
-
+### 2. Install Dependencies
+Make sure you have **Node.js v18+** and **pnpm** installed:
 ```bash
 pnpm install
 ```
 
-3. Create a `.env` file in the `backend` directory:
-
-```bash
-# Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/flow_pilot_dev?schema=public"
-
+### 3. Setup Environment Variables
+Create a `.env` file in the root folder and add your Clerk credentials (you can register a free account at [clerk.com](https://clerk.com)):
+```env
 # Clerk Authentication
-CLERK_SECRET_KEY="sk_test_your_clerk_secret_key_here"
-
-# Server Configuration (optional)
-PORT=3001
-FRONTEND_URLS="http://localhost:3000"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your_clerk_publishable_key"
+CLERK_SECRET_KEY="your_clerk_secret_key"
 ```
+*(Note: A test publishable and secret key are already pre-filled in `.env` for quick local evaluations).*
 
-4. Generate Prisma Client:
-
-```bash
-pnpm prisma:generate
-```
-
-5. Run database migrations:
-
-```bash
-pnpm prisma:migrate
-```
-
-6. (Optional) Seed the database with sample data:
-
-```bash
-pnpm prisma:seed
-```
-
-7. Start the backend development server:
-
-```bash
-pnpm start:dev
-```
-
-The backend API will be available at:
-- **API**: http://localhost:3001
-- **Swagger Documentation**: http://localhost:3001/api
-
-### 5. Frontend Setup
-
-1. Open a new terminal and navigate to the frontend directory:
-
-```bash
-cd my-app
-```
-
-2. Install dependencies:
-
-```bash
-pnpm install
-```
-
-3. Create a `.env.local` file in the `my-app` directory:
-
-```bash
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_your_clerk_publishable_key_here"
-CLERK_SECRET_KEY="sk_test_your_clerk_secret_key_here"
-
-# API Configuration
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-```
-
-**Note**: Make sure `NEXT_PUBLIC_API_URL` points to your backend server (default: `http://localhost:3001`)
-
-4. Start the frontend development server:
-
+### 4. Start the Dev Server
 ```bash
 pnpm dev
 ```
+Open **`http://localhost:3000`** in your browser to view the application.
 
-The frontend application will be available at:
-- **Application**: http://localhost:3000
+---
 
-## Running the Project
+## ⚡ Deployment to Vercel
 
-### Development Mode
+Since this is now a frontend-only Next.js app, you can deploy it to **Vercel** with zero backend infrastructure:
 
-1. **Terminal 1 - Backend**:
-```bash
-cd backend
-pnpm start:dev
-```
+1.  Push your code to your GitHub repository.
+2.  Import the repository into your **[Vercel Dashboard](https://vercel.com/new)**.
+3.  Add the **Environment Variables** in the Vercel project settings:
+    *   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (from your `.env` file)
+    *   `CLERK_SECRET_KEY` (from your `.env` file)
+4.  Click **Deploy**!
 
-2. **Terminal 2 - Frontend**:
-```bash
-cd my-app
-pnpm dev
-```
+---
 
-3. Open your browser and navigate to http://localhost:3000
-
-### First-Time Setup Checklist
-
-- [ ] PostgreSQL database created and running
-- [ ] Clerk account created and application configured
-- [ ] Backend `.env` file created with `DATABASE_URL` and `CLERK_SECRET_KEY`
-- [ ] Frontend `.env.local` file created with Clerk keys and `NEXT_PUBLIC_API_URL`
-- [ ] Prisma migrations run (`pnpm prisma:migrate` in backend)
-- [ ] Backend server running on http://localhost:3001
-- [ ] Frontend server running on http://localhost:3000
-
-## Environment Variables Reference
-
-### Backend (`backend/.env`)
-
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | - |
-| `CLERK_SECRET_KEY` | Clerk secret key for authentication | Yes | - |
-| `PORT` | Backend server port | No | `3001` |
-| `FRONTEND_URLS` | Comma-separated list of allowed frontend URLs | No | `http://localhost:3000` |
-
-### Frontend (`my-app/.env.local`)
-
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | Yes | - |
-| `CLERK_SECRET_KEY` | Clerk secret key | Yes | - |
-| `NEXT_PUBLIC_API_URL` | Backend API URL | Yes | `http://localhost:3000` |
-
-## Useful Commands
-
-### Backend
-
-```bash
-# Development
-pnpm start:dev          # Start development server with hot reload
-
-# Database
-pnpm prisma:generate     # Generate Prisma Client
-pnpm prisma:migrate      # Run database migrations
-pnpm prisma:seed         # Seed database with sample data
-pnpm prisma:studio       # Open Prisma Studio (database GUI)
-
-# Testing
-pnpm test               # Run unit tests
-pnpm test:e2e           # Run end-to-end tests
-pnpm test:cov           # Run tests with coverage
-
-# Code Quality
-pnpm lint               # Run ESLint
-pnpm format             # Format code with Prettier
-```
-
-### Frontend
-
-```bash
-# Development
-pnpm dev                # Start development server
-
-# Build
-pnpm build              # Build for production
-pnpm start              # Start production server
-
-# Code Quality
-pnpm lint               # Run ESLint
-```
-
-## Troubleshooting
-
-### Database Connection Issues
-
-- Ensure PostgreSQL is running: `pg_isready` or check Docker container status
-- Verify `DATABASE_URL` format: `postgresql://user:password@host:port/database?schema=public`
-- Check database exists: `psql -l` (should list `flow_pilot_dev`)
-- **For Neon.com**: 
-  - Ensure your connection string includes `?sslmode=require` (Neon requires SSL)
-  - Verify your Neon project is active (check Neon dashboard)
-  - Check if your IP is allowed (Neon may require IP allowlisting for some plans)
-  - Connection strings from Neon include SSL by default - don't remove the SSL parameters
-
-### Clerk Authentication Issues
-
-- Verify Clerk keys are correct (check for typos)
-- Ensure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` starts with `pk_test_` or `pk_live_`
-- Ensure `CLERK_SECRET_KEY` starts with `sk_test_` or `sk_live_`
-- Check Clerk dashboard for allowed origins (should include `http://localhost:3000`)
-
-### Port Already in Use
-
-- Backend (3001): Change `PORT` in `backend/.env` or stop the process using port 3001
-- Frontend (3000): Stop the process using port 3000 or use `pnpm dev -p 3001`
-
-### Prisma Migration Issues
-
-- Reset database (⚠️ **WARNING**: This will delete all data):
-  ```bash
-  cd backend
-  pnpm prisma migrate reset
-  ```
-
-### CORS Errors
-
-- Ensure `FRONTEND_URLS` in backend `.env` includes `http://localhost:3000`
-- Verify `NEXT_PUBLIC_API_URL` in frontend `.env.local` matches backend URL
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 flow-pilot/
-├── backend/              # NestJS backend application
-│   ├── prisma/          # Prisma schema and migrations
-│   ├── src/             # Source code
-│   └── package.json
-├── my-app/              # Next.js frontend application
-│   ├── app/             # Next.js app router pages
-│   ├── components/      # React components
-│   ├── lib/             # Utilities and API client
-│   └── package.json
-├── docs/                # Project documentation
-└── infra/              # Infrastructure scripts
+├── app/                  # Next.js App Router (Dashboard Pages, Auth Routing)
+│   ├── (dashboard)/      # Protected dashboard views (Tasks, Entries, Reports, Activity)
+│   ├── providers/        # Client theme and configuration providers
+│   └── page.tsx          # Router landing page
+├── components/           # Reusable UI widgets & layout wrappers (Sidebar, Header, KanbanBoard)
+├── context/              # Toast notification context
+├── hooks/                # Custom React hooks (Shortcuts, Timer, MobileMenu)
+├── lib/                  # Data layer (Mock database & API client proxy)
+│   ├── api.ts            # Mock Axios client intercepting endpoints
+│   ├── mock-db.ts        # localStorage DB interface and seed logic
+│   └── types.ts          # TypeScript interfaces & enums
+├── public/               # Public assets and SVG icons
+└── store/                # Zustand global state (Timer store)
 ```
 
-## Additional Resources
+---
 
-- [NestJS Documentation](https://docs.nestjs.com/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [Clerk Documentation](https://clerk.com/docs)
-- [API Documentation](http://localhost:3001/api) (Swagger UI when backend is running)
-
-## Support
-
-For issues or questions, please refer to the project documentation in the `docs/` directory or open an issue in the repository.
+## 📝 License
+This project is open-source and available under the MIT License.
